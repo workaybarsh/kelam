@@ -1,0 +1,14 @@
+config.json
+config.json.tmp
+bridge.log
+bridge.log.1
+bridge.out
+wizard.out
+bridge.pid
+__pycache__/
+*.pyc
+.venv/
+dist/
+build/
+*.spec
+diagnostics.json
