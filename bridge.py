@@ -10,6 +10,7 @@ import hotkey
 import keyhook
 import paths
 import trigger
+from i18n import tr
 
 BASE_DIR = paths.BASE_DIR
 LOG_PATH = os.path.join(BASE_DIR, "bridge.log")
@@ -121,7 +122,7 @@ class Bridge:
         self.rotate_log()
         self.log(f"started | {len(self.bindings)} key(s)")
         if not self.bindings:
-            self.log("no keys configured; open settings and add one")
+            self.log(tr("no keys configured; open settings and add one"))
             return 1
 
         for index, item in enumerate(self.bindings):
@@ -160,7 +161,7 @@ def single_instance():
 def main():
     mutex, already = single_instance()
     if already:
-        print("Bridge is already running.", flush=True)
+        print(tr("Bridge is already running."), flush=True)
         return 0
 
     settings = cfg.load()

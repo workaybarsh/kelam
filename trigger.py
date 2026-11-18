@@ -4,6 +4,7 @@ import threading
 import time
 
 import hidbtn
+from i18n import tr
 
 CONSUMER_PAGE = 0x000C
 VENDOR_PAGE_MIN = 0xFF00
@@ -77,7 +78,7 @@ class HidSupervisor(threading.Thread):
             path, info = self._resolve()
             if not path:
                 if state != "yok" and self.log:
-                    self.log("device not found (asleep or out of range), retrying")
+                    self.log(tr("device not found (asleep or out of range), retrying"))
                 state = "yok"
                 self._wait(3.0)
                 continue
@@ -94,7 +95,7 @@ class HidSupervisor(threading.Thread):
             if self.stop_flag.is_set():
                 break
             if self.log:
-                self.log(f"connection lost: {self.last_error or 'read finished'}")
+                self.log(f"connection lost: {self.last_error or tr('read finished')}")
             state = "koptu"
             self._wait(2.0)
 

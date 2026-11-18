@@ -2,6 +2,7 @@
 
 import ctypes
 import time
+from i18n import tr
 
 user32 = ctypes.WinDLL("user32.dll")
 KEYEVENTF_KEYUP = 0x0002
@@ -57,7 +58,7 @@ def parse_hotkey(spec):
     """'ctrl+alt+d' -> ([0x11, 0x12], 0x44)"""
     parts = [p.strip().lower() for p in spec.split("+") if p.strip()]
     if not parts:
-        raise ValueError("Hotkey cannot be empty")
+        raise ValueError(tr("Hotkey cannot be empty"))
     key_part = parts[-1]
     mods = parts[:-1]
     for mod in mods:

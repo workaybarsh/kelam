@@ -13,17 +13,18 @@ import time
 import winreg
 
 import paths
+from i18n import tr
 
 BASE_DIR = paths.BASE_DIR
-BRIDGE_PY = os.path.join(BASE_DIR, "bridge.py")
-WIZARD_PY = os.path.join(BASE_DIR, "wizard.py")
+BRIDGE_PY = os.path.join(paths.APP_DIR, "bridge.py")
+WIZARD_PY = os.path.join(paths.APP_DIR, "wizard.py")
 PID_FILE = os.path.join(BASE_DIR, "bridge.pid")
 
 APP_NAME = "Kelam"
 APP_ID = "Kelam"
 VERSION = "1.0.0"
 PUBLISHER = "workaybarsh"
-DESCRIPTION = "Voice typing with a remote mic button"
+DESCRIPTION = tr("Voice typing with a remote mic button")
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 UNINSTALL_KEY = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Kelam"
@@ -165,7 +166,7 @@ def start():
         return None
 
     kwargs = dict(
-        cwd=BASE_DIR,
+        cwd=paths.APP_DIR,
         creationflags=CREATE_NO_WINDOW,
         close_fds=True,
         env=_child_env(),
@@ -290,13 +291,13 @@ def uninstall_command(quiet=False):
     suffix = " --uninstall --quiet" if quiet else " --uninstall"
     if is_frozen():
         return f'"{sys.executable}"{suffix}'
-    main_py = os.path.join(BASE_DIR, "main.py")
+    main_py = os.path.join(paths.APP_DIR, "main.py")
     return f'"{pythonw()}" -u "{main_py}"{suffix}'
 
 
 def install_size_kb():
     total = 0
-    for root, _dirs, files in os.walk(BASE_DIR):
+    for root, _dirs, files in os.walk(paths.APP_DIR):
         for name in files:
             try:
                 total += os.path.getsize(os.path.join(root, name))
@@ -316,7 +317,7 @@ def register_uninstall():
             "DisplayVersion": VERSION,
             "Publisher": PUBLISHER,
             "DisplayIcon": icon,
-            "InstallLocation": BASE_DIR,
+            "InstallLocation": paths.APP_DIR,
             "UninstallString": uninstall_command(),
             "QuietUninstallString": uninstall_command(quiet=True),
             "Comments": DESCRIPTION,
@@ -405,7 +406,7 @@ def create_shortcuts(desktop=False):
     created = []
 
     path = start_menu_shortcut_path()
-    if path and _make_shortcut(path, target, args, BASE_DIR, DESCRIPTION, icon):
+    if path and _make_shortcut(path, target, args, paths.APP_DIR, DESCRIPTION, icon):
         created.append(path)
 
     if desktop:
@@ -420,7 +421,7 @@ def remove_shortcuts():
     candidates = [
         start_menu_shortcut_path(),
         desktop_shortcut_path(),
-        os.path.join(startup_dir() or "", "Kelam-Bridge.lnk"),
+        os.path.join(startup_dir() or "", tr("Kelam-Bridge.lnk")),
         os.path.join(startup_dir() or "", "MicTus-Kopru.lnk"),
         os.path.join(startup_dir() or "", "MicTus-Kopru.lnk"),
     ]
@@ -481,10 +482,10 @@ def schedule_folder_delete():
         'del "%~f0" >nul 2>&1\r\n'
     )
     try:
-        with open(bat, "w", encoding="ascii", errors="replace") as f:
+        with open(bat, "w", encoding=tr("ascii"), errors=tr("replace")) as f:
             f.write(script)
         subprocess.Popen(
-            ["cmd", "/c", bat],
+            [tr("cmd"), "/c", bat],
             cwd=tempfile.gettempdir(),
             creationflags=CREATE_NO_WINDOW,
             close_fds=True,

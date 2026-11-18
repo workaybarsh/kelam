@@ -187,6 +187,22 @@ The tests really run the wizard: they walk the pages programmatically, feed the
 key capture a synthetic HID report, verify the settings/startup entry/shortcuts the
 install wrote, then uninstall and check that no trace remains.
 
+## Language and data location
+
+* The wizard and the settings window switch between **English and Turkish**; the
+  choice is stored in config.json and the wizard has a dedicated language page.
+* Everything the app creates - config.json, ridge.log, ridge.pid - lives in
+  %APPDATA%\\Kelam. Running Kelam.exe never writes into its own folder.
+* python test_lang.py and python test_exe_clean.py verify both behaviours.
+
+## Language and data location
+
+* The wizard and the settings window switch between **English and Turkish**; the
+  choice is stored in `config.json`, and the setup wizard has its own language page.
+* Everything the app creates — `config.json`, `bridge.log`, `bridge.pid` — lives in
+  `%APPDATA%\Kelam`. Running `Kelam.exe` never writes into its own folder.
+* `python test_lang.py` and `python test_exe_clean.py` verify both behaviours.
+
 ## License
 
 [MIT](LICENSE) © 2026 workaybarsh

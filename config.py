@@ -9,11 +9,13 @@ import json
 import os
 
 import paths
+from i18n import tr
 
 BASE_DIR = paths.BASE_DIR
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 
 DEFAULT_CONFIG = {
+    "language": "en",
     "bindings": [],
     "beep": False,
     "debounce_ms": 400,
@@ -50,17 +52,17 @@ SPECIAL_VK = {
 }
 
 CONSUMER_NAMES = {
-    0x00CF: "Voice Command (mic button)",
+    0x00CF: tr("Voice Command (mic button)"),
     0x0221: "AC Search",
     0x0223: "AC Home",
     0x0224: "AC Back",
     0x0225: "AC Forward",
     0x00CD: "Play/Pause",
     0x00E2: "Mute",
-    0x00E9: "Volume up",
-    0x00EA: "Volume down",
-    0x00B5: "Next track",
-    0x00B6: "Previous track",
+    0x00E9: tr("Volume up"),
+    0x00EA: tr("Volume down"),
+    0x00B5: tr("Next track"),
+    0x00B6: tr("Previous track"),
 }
 
 
@@ -132,7 +134,7 @@ def vk_name(vk):
 
 def describe_trigger(trigger):
     if not trigger:
-        return "not configured"
+        return tr("not configured")
     if trigger.get("type") == "hid":
         name = CONSUMER_NAMES.get(trigger.get("usage"))
         base = (

@@ -25,6 +25,8 @@ import keyhook
 import paths
 import service
 import trigger
+import i18n
+from i18n import tr
 
 BRAND_BG = "#10243a"
 BRAND_BG2 = "#1d4a6b"
@@ -217,15 +219,20 @@ class SetupWizard:
         self.root.resizable(False, False)
         self.root.protocol("WM_DELETE_WINDOW", self._cancel)
 
+        try:
+            i18n.set_lang(cfg.load().get("language", "en"))
+        except (OSError, ValueError):
+            i18n.set_lang("en")
+
         self._was_running = service.is_running()
         installed = os.path.isfile(cfg.CONFIG_PATH) or self._was_running
         self.mode = "install"  # settings live in a separate window (SettingsWindow)
         self.root.title(
-            "Settings" if self.mode == "settings" else "Kelam Setup Wizard"
+            tr("Settings") if self.mode == "settings" else tr("Kelam Setup Wizard")
         )
 
         self._sequence = [
-            "welcome", "license", "capture", "action", "tasks", "ready",
+            "welcome", "language", "license", "capture", "action", "tasks", "ready",
             "progress", "finish",
         ]
         self.page = 0
@@ -245,7 +252,7 @@ class SetupWizard:
         self.saved_trigger = saved
         self.trigger = saved
         self.captured_label = tk.StringVar(
-            value=cfg.describe_trigger(saved) if saved else "No key captured yet"
+            value=cfg.describe_trigger(saved) if saved else tr("No key captured yet")
         )
 
         if self.mode == "settings":
@@ -292,10 +299,11 @@ class SetupWizard:
         self.navigation = ttk.Frame(self.root, padding=(12, 10))
         self.navigation.pack(fill="x", side="bottom")
         # Right to left: Cancel | Next | Back
-        ttk.Button(self.navigation, text="Cancel", command=self._cancel).pack(side="right")
-        self.next_button = ttk.Button(self.navigation, text="Next", command=self._next)
+        self.cancel_button = ttk.Button(self.navigation, text=tr("Cancel"), command=self._cancel)
+        self.cancel_button.pack(side="right")
+        self.next_button = ttk.Button(self.navigation, text=tr("Next"), command=self._next)
         self.next_button.pack(side="right", padx=(8, 0))
-        self.back_button = ttk.Button(self.navigation, text="Back", command=self._back)
+        self.back_button = ttk.Button(self.navigation, text=tr("Back"), command=self._back)
         self.back_button.pack(side="right", padx=(8, 0))
 
         self.root.bind("<Return>", self._on_return)
@@ -322,9 +330,10 @@ class SetupWizard:
         self.current = self._sequence[page]
         self._clear_content()
         self.back_button.configure(state="normal" if page else "disabled")
-        self.next_button.configure(text="Next", command=self._next, state="normal")
+        self.next_button.configure(text=tr("Next"), command=self._next, state="normal")
         pages: dict[str, Callable[[], None]] = {
             "welcome": self._page_welcome,
+            "language": self._page_language,
             "license": self._page_license,
             "capture": self._page_capture,
             "action": self._page_action,
@@ -366,7 +375,7 @@ class SetupWizard:
 
     def _page_welcome(self):
         if self.mode == "settings":
-            self._title_with_logo("Settings")
+            self._title_with_logo(tr("Settings"))
             ttk.Label(
                 self.content,
                 text=(
@@ -377,30 +386,30 @@ class SetupWizard:
                 justify="left", wraplength=500,
             ).pack(anchor="w", pady=(12, 10))
 
-            info = ttk.LabelFrame(self.content, text="Current state", padding=12)
+            info = ttk.LabelFrame(self.content, text=tr("Current state"), padding=12)
             info.pack(fill="x", pady=(4, 10))
             settings = cfg.load()
             lines = [
                 f"Remote key  : {cfg.describe_trigger(settings.get('trigger'))}",
                 f"Action      : {cfg.describe_action(settings.get('action'))}",
-                f"Bridge      : {'running' if self._was_running else 'stopped'}",
-                f"Autostart   : {'on' if settings.get('autostart') else 'off'}",
+                f"Bridge      : {tr('running') if self._was_running else tr('stopped')}",
+                f"Autostart   : {'on' if settings.get('autostart') else tr('off')}",
             ]
             ttk.Label(info, text="\n".join(lines), justify="left").pack(anchor="nw")
 
             row = ttk.Frame(self.content)
             row.pack(fill="x", pady=(2, 0))
             ttk.Button(
-                row, text="Remove Kelam from this computer", command=self._uninstall
+                row, text=tr("Remove Kelam from this computer"), command=self._uninstall
             ).pack(side="left")
             ttk.Label(
                 row,
-                text="  Removes the bridge, startup entry, shortcuts and settings.",
+                text=tr("  Removes the bridge, startup entry, shortcuts and settings."),
                 foreground="#666",
             ).pack(side="left")
             return
 
-        self._title_with_logo("Welcome to Kelam")
+        self._title_with_logo(tr("Welcome to Kelam"))
         ttk.Label(
             self.content,
             text=(
@@ -413,7 +422,7 @@ class SetupWizard:
             justify="left", wraplength=500,
         ).pack(anchor="w", pady=(12, 10))
 
-        frame = ttk.LabelFrame(self.content, text="What you need", padding=12)
+        frame = ttk.LabelFrame(self.content, text=tr("What you need"), padding=12)
         frame.pack(fill="x", pady=(6, 12))
         ttk.Label(
             frame,
@@ -428,11 +437,11 @@ class SetupWizard:
         if service.is_running() or os.path.isfile(cfg.CONFIG_PATH):
             row = ttk.Frame(self.content)
             row.pack(fill="x", pady=(6, 0))
-            ttk.Button(row, text="Remove installation", command=self._uninstall).pack(
+            ttk.Button(row, text=tr("Remove installation"), command=self._uninstall).pack(
                 side="left"
             )
             ttk.Label(
-                row, text="  Removes the existing installation completely.", foreground="#666"
+                row, text=tr("  Removes the existing installation completely."), foreground="#666"
             ).pack(side="left")
 
         if self.saved_trigger:
@@ -447,10 +456,58 @@ class SetupWizard:
                 justify="left",
             ).pack(anchor="w", pady=(12, 0))
 
+    def _page_language(self):
+        self._heading(
+            tr("Select language"),
+            tr("Choose the language for the wizard and for the application."),
+        )
+        frame = ttk.Frame(self.content)
+        frame.pack(fill="x", pady=(6, 0))
+        listbox = tk.Listbox(
+            frame,
+            height=2,
+            font=("Segoe UI", 12),
+            activestyle="none",
+            exportselection=False,
+            cursor="hand2",
+        )
+        for label in i18n.LANGUAGES.values():
+            listbox.insert("end", f"   {label}")
+        codes = list(i18n.LANGUAGES.keys())
+        current = i18n.get_lang()
+        listbox.selection_set(codes.index(current) if current in codes else 0)
+        listbox.pack(fill="x")
+        listbox.bind(
+            "<<ListboxSelect>>",
+            lambda _event=None: self._set_language(codes[listbox.curselection()[0]])
+            if listbox.curselection()
+            else None,
+        )
+        ttk.Label(
+            self.content,
+            text=tr("You can change this later from Settings."),
+            foreground="#4b5563",
+        ).pack(anchor="w", pady=(10, 0))
+
+    def _set_language(self, code: str):
+        """Apply and remember the language, then redraw the current page."""
+        i18n.set_lang(code)
+        try:
+            data = cfg.load()
+            data["language"] = i18n.get_lang()
+            cfg.save(data)
+        except (OSError, ValueError):
+            pass
+        self.root.title(tr("Kelam Setup Wizard"))
+        self.back_button.configure(text=tr("Back"))
+        self.next_button.configure(text=tr("Next"))
+        self.cancel_button.configure(text=tr("Cancel"))
+        self._show_page(self.page)
+
     def _page_license(self):
         self._heading(
-            "License agreement",
-            "You must accept the MIT license to continue.",
+            tr("License agreement"),
+            tr("You must accept the MIT license to continue."),
         )
         text = tk.Text(self.content, height=14, wrap="word", padx=8, pady=8)
         license_path = os.path.join(paths.RESOURCE_DIR, "LICENSE")
@@ -458,12 +515,12 @@ class SetupWizard:
             with open(license_path, "r", encoding="utf-8") as f:
                 license_text = f.read()
         except OSError:
-            license_text = "MIT License (LICENSE file not found)"
+            license_text = tr("MIT License (LICENSE file not found)")
         text.insert("1.0", license_text)
         text.configure(state="disabled")
         text.pack(fill="both", expand=True)
         ttk.Checkbutton(
-            self.content, text="I accept the agreement",
+            self.content, text=tr("I accept the agreement"),
             variable=self.accepted_license,
         ).pack(anchor="w", pady=(10, 0))
 
@@ -478,13 +535,13 @@ class SetupWizard:
                 "Press the microphone button on the remote once. When the key "
                 "appears, confirm with Enter."
             )
-        self._heading("Teach the remote key", description)
-        box = ttk.LabelFrame(self.content, text="Selected key", padding=12)
+        self._heading(tr("Teach the remote key"), description)
+        box = ttk.LabelFrame(self.content, text=tr("Selected key"), padding=12)
         box.pack(fill="x")
         self.captured_label.set(
             cfg.describe_trigger(self.trigger)
             if self.trigger
-            else "No key captured yet"
+            else tr("No key captured yet")
         )
         self.captured_value = ttk.Label(
             box, textvariable=self.captured_label,
@@ -492,14 +549,14 @@ class SetupWizard:
         )
         self.captured_value.pack(anchor="w")
 
-        ttk.Label(self.content, text="Recent events:").pack(anchor="w", pady=(12, 4))
+        ttk.Label(self.content, text=tr("Recent events:")).pack(anchor="w", pady=(12, 4))
         self.event_list = tk.Listbox(self.content, height=6, activestyle="none")
         self.event_list.pack(fill="both", expand=True)
 
         row = ttk.Frame(self.content)
         row.pack(fill="x", pady=(10, 0))
-        ttk.Button(row, text="Reset", command=self._reset_capture).pack(side="left")
-        ttk.Label(row, text="   Enter = confirm", foreground="#666").pack(side="left")
+        ttk.Button(row, text=tr("Reset"), command=self._reset_capture).pack(side="left")
+        ttk.Label(row, text=tr("   Enter = confirm"), foreground="#666").pack(side="left")
 
         self._poll_capture()
 
@@ -514,7 +571,7 @@ class SetupWizard:
         self.captured_label.set(
             cfg.describe_trigger(self.trigger)
             if self.trigger
-            else "No key captured yet"
+            else tr("No key captured yet")
         )
 
     def _poll_capture(self):
@@ -541,32 +598,32 @@ class SetupWizard:
 
     def _page_action(self):
         self._heading(
-            "What should the key do?",
-            "Which action should the microphone button trigger?",
+            tr("What should the key do?"),
+            tr("Which action should the microphone button trigger?"),
         )
         ttk.Radiobutton(
             self.content, value="winh", variable=self.action_mode,
-            text="Windows voice typing (Win+H) — recommended",
+            text=tr("Windows voice typing (Win+H) — recommended"),
         ).pack(anchor="w", pady=(4, 2))
         ttk.Label(
             self.content,
-            text="   Runs in the cloud, free, no load on this PC.",
+            text=tr("   Runs in the cloud, free, no load on this PC."),
             foreground="#666",
         ).pack(anchor="w", pady=(0, 12))
 
         ttk.Radiobutton(
             self.content, value="custom", variable=self.action_mode,
-            text="Custom hotkey:",
+            text=tr("Custom hotkey:"),
         ).pack(anchor="w")
         row = ttk.Frame(self.content)
         row.pack(fill="x", pady=(4, 0), padx=(22, 0))
         ttk.Entry(row, textvariable=self.custom_hotkey, width=24).pack(side="left")
-        ttk.Button(row, text="Capture", command=self._capture_hotkey).pack(
+        ttk.Button(row, text=tr("Capture"), command=self._capture_hotkey).pack(
             side="left", padx=(8, 0)
         )
         ttk.Label(
             self.content,
-            text="   Example: ctrl+alt+d, f9, win+shift+space",
+            text=tr("   Example: ctrl+alt+d, f9, win+shift+space"),
             foreground="#666",
         ).pack(anchor="w", pady=(4, 0))
 
@@ -574,7 +631,7 @@ class SetupWizard:
         if self._hotkey_capture:
             return
         self._hotkey_capture = True
-        self.custom_hotkey.set("… waiting for a key …")
+        self.custom_hotkey.set(tr("… waiting for a key …"))
 
         def handler(event):
             if keyhook.is_modifier(event["vk"]):
@@ -598,26 +655,26 @@ class SetupWizard:
         except ValueError:
             self.custom_hotkey.set("ctrl+alt+d")
             messagebox.showwarning(
-                "Invalid hotkey",
+                tr("Invalid hotkey"),
                 f"'{combo}' cannot be used, reverted to the default.",
                 parent=self.root,
             )
 
     def _page_tasks(self):
         self._heading(
-            "Extra tasks",
-            "Choose the extra tasks to perform during setup.",
+            tr("Extra tasks"),
+            tr("Choose the extra tasks to perform during setup."),
         )
         ttk.Checkbutton(
-            self.content, text="Start automatically when Windows starts",
+            self.content, text=tr("Start automatically when Windows starts"),
             variable=self.autostart,
         ).pack(anchor="w", pady=(8, 0))
         ttk.Checkbutton(
-            self.content, text="Play a short beep when the key is pressed",
+            self.content, text=tr("Play a short beep when the key is pressed"),
             variable=self.beep,
         ).pack(anchor="w", pady=(8, 0))
         ttk.Checkbutton(
-            self.content, text="Add a Kelam shortcut to the desktop",
+            self.content, text=tr("Add a Kelam shortcut to the desktop"),
             variable=self.create_shortcut,
         ).pack(anchor="w", pady=(8, 0))
 
@@ -639,33 +696,33 @@ class SetupWizard:
     def _page_ready(self):
         if self.mode == "settings":
             self._heading(
-                "Save changes",
-                "The settings below will be applied.",
+                tr("Save changes"),
+                tr("The settings below will be applied."),
             )
         else:
             self._heading(
-                "Ready to install",
-                "Setup is ready to install Kelam. Review the settings.",
+                tr("Ready to install"),
+                tr("Setup is ready to install Kelam. Review the settings."),
             )
-        box = ttk.LabelFrame(self.content, text="Summary", padding=12)
+        box = ttk.LabelFrame(self.content, text=tr("Summary"), padding=12)
         box.pack(fill="both", expand=True)
         lines = [
             f"Remote key      : {cfg.describe_trigger(self.trigger)}",
             f"Action          : {cfg.describe_action({'type': 'hotkey', 'hotkey': self._action_spec()})}",
-            f"Start with PC   : {'yes' if self.autostart.get() else 'no'}",
-            f"Beep            : {'yes' if self.beep.get() else 'no'}",
-            f"Desktop shortcut: {'yes' if self.create_shortcut.get() else 'no'}",
+            f"Start with PC   : {tr('yes') if self.autostart.get() else 'no'}",
+            f"Beep            : {tr('yes') if self.beep.get() else 'no'}",
+            f"Desktop shortcut: {tr('yes') if self.create_shortcut.get() else 'no'}",
             f"Location        : {service.BASE_DIR}",
         ]
         ttk.Label(box, text="\n".join(lines), justify="left").pack(anchor="nw")
-        self.next_button.configure(text="Save" if self.mode == "settings" else "Install")
+        self.next_button.configure(text=tr("Save") if self.mode == "settings" else tr("Install"))
 
     def _page_installing(self):
         if self.mode == "settings":
-            self._heading("Saving", "Please wait, applying your settings.")
+            self._heading(tr("Saving"), tr("Please wait, applying your settings."))
         else:
-            self._heading("Installing", "Please wait, installing Kelam.")
-        self.status = tk.StringVar(value="Preparing…")
+            self._heading(tr("Installing"), tr("Please wait, installing Kelam."))
+        self.status = tk.StringVar(value=tr("Preparing…"))
         ttk.Label(self.content, textvariable=self.status).pack(anchor="w", pady=(8, 8))
         self.progress = ttk.Progressbar(self.content, mode="determinate", maximum=100)
         self.progress.pack(fill="x")
@@ -675,13 +732,13 @@ class SetupWizard:
 
     def _page_finish(self):
         if self.mode == "settings":
-            self._title_with_logo("Settings saved", size=64)
+            self._title_with_logo(tr("Settings saved"), size=64)
             body = (
                 "The new settings were applied and the bridge restarted.\n\n"
                 "Press the remote key to try it."
             )
         else:
-            self._title_with_logo("Setup complete", size=64)
+            self._title_with_logo(tr("Setup complete"), size=64)
             body = (
                 "Kelam is installed and running.\n\n"
                 "Press the remote microphone button and start talking.\n"
@@ -691,12 +748,12 @@ class SetupWizard:
             self.content, text=body, justify="left", wraplength=500,
         ).pack(anchor="w", pady=(12, 8))
 
-        box = ttk.LabelFrame(self.content, text="Assigned key", padding=12)
+        box = ttk.LabelFrame(self.content, text=tr("Assigned key"), padding=12)
         box.pack(fill="x", pady=(6, 0))
         ttk.Label(box, text=cfg.describe_trigger(self.trigger)).pack(anchor="w")
 
         if self._warnings:
-            warn = ttk.LabelFrame(self.content, text="Warnings", padding=12)
+            warn = ttk.LabelFrame(self.content, text=tr("Warnings"), padding=12)
             warn.pack(fill="x", pady=(10, 0))
             ttk.Label(
                 warn, text="\n".join(f"• {w}" for w in self._warnings),
@@ -704,15 +761,15 @@ class SetupWizard:
             ).pack(anchor="nw")
 
         self.back_button.configure(state="disabled")
-        self.next_button.configure(text="Close", command=self._finish)
+        self.next_button.configure(text=tr("Close"), command=self._finish)
 
     # ------------------------------------------------------------ navigation
     def _on_return(self, _event):
         if self.current == "capture":
             if not self.trigger:
                 messagebox.showwarning(
-                    "Waiting for a key",
-                    "Press the remote microphone button first.",
+                    tr("Waiting for a key"),
+                    tr("Press the remote microphone button first."),
                     parent=self.root,
                 )
                 return "break"
@@ -723,12 +780,12 @@ class SetupWizard:
     def _next(self):
         if self.current == "license" and not self.accepted_license.get():
             messagebox.showwarning(
-                "License", "Accept the license to continue.", parent=self.root
+                tr("License"), tr("Accept the license to continue."), parent=self.root
             )
             return
         if self.current == "capture" and not self.trigger:
             messagebox.showwarning(
-                "Key not captured",
+                tr("Key not captured"),
                 "Could not detect the remote key. Press it again; "
                 "if it fails, clear the list with 'Reset'.",
                 parent=self.root,
@@ -738,7 +795,7 @@ class SetupWizard:
             try:
                 hotkey.parse_hotkey(self._action_spec())
             except ValueError as exc:
-                messagebox.showerror("Hotkey", str(exc), parent=self.root)
+                messagebox.showerror(tr("Hotkey"), str(exc), parent=self.root)
                 return
         self._show_page(self.page + 1)
 
@@ -749,7 +806,7 @@ class SetupWizard:
     def _cancel(self):
         if self.current == "progress":
             messagebox.showinfo(
-                "Setup", "Saving is in progress and cannot be cancelled.", parent=self.root
+                tr("Setup"), tr("Saving is in progress and cannot be cancelled."), parent=self.root
             )
             return
         self.capture.stop()
@@ -771,7 +828,7 @@ class SetupWizard:
         self._installed = False
         self._warnings = []
         try:
-            self._set_progress(15, "Saving settings…")
+            self._set_progress(15, tr("Saving settings…"))
             cfg_data = cfg.load()
             cfg_data["bindings"] = [
                 cfg.binding(self.trigger, self._action_spec())
@@ -781,10 +838,10 @@ class SetupWizard:
             cfg_data["swallow"] = self.trigger.get("type") == "key"
             cfg.save(cfg_data)
 
-            self._set_progress(45, "Updating the startup entry…")
+            self._set_progress(45, tr("Updating the startup entry…"))
             service.set_autostart(bool(self.autostart.get()))
 
-            self._set_progress(65, "Creating shortcuts…")
+            self._set_progress(65, tr("Creating shortcuts…"))
             service.create_shortcuts(desktop=bool(self.create_shortcut.get()))
             if self.create_shortcut.get():
                 link = service.desktop_shortcut_path()
@@ -796,22 +853,22 @@ class SetupWizard:
 
             self._set_progress(
                 80,
-                "Restarting the bridge…"
+                tr("Restarting the bridge…")
                 if self.mode == "settings"
-                else "Starting the bridge…",
+                else tr("Starting the bridge…"),
             )
             pid = service.restart()
             if not pid:
                 self._warnings.append(
-                    "Could not start the bridge. Remove the installation and try again."
+                    tr("Could not start the bridge. Remove the installation and try again.")
                 )
             service.register_uninstall()
 
             self._set_progress(
                 100,
-                "Settings saved."
+                tr("Settings saved.")
                 if self.mode == "settings"
-                else "Installation complete.",
+                else tr("Installation complete."),
             )
             self._installed = True
             finish_index = self._sequence.index("finish")
@@ -821,8 +878,8 @@ class SetupWizard:
 
     def _install_failed(self, error):
         self.back_button.configure(state="normal")
-        self.next_button.configure(state="normal", text="Back", command=self._back)
-        messagebox.showerror("Installation failed", str(error), parent=self.root)
+        self.next_button.configure(state="normal", text=tr("Back"), command=self._back)
+        messagebox.showerror(tr("Installation failed"), str(error), parent=self.root)
 
     def _finish(self):
         self.capture.stop()
@@ -836,6 +893,17 @@ class SetupWizard:
         if dialog.removed and self.root.winfo_exists():
             self.root.destroy()
 
+    def _toggle_language(self):
+        """Switch the UI language and reopen the window in it."""
+        i18n.toggle_lang()
+        self.settings["language"] = i18n.get_lang()
+        try:
+            cfg.save(self.settings)
+        except OSError:
+            pass
+        self.reopen = True
+        self.root.destroy()
+
     def run(self):
         self.root.mainloop()
 
@@ -845,7 +913,12 @@ class SettingsWindow:
 
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Settings")
+        self.reopen = False
+        try:
+            i18n.set_lang(cfg.load().get("language", "en"))
+        except (OSError, ValueError):
+            i18n.set_lang("en")
+        self.root.title(tr("Settings"))
         self.root.geometry("820x600")
         self.root.minsize(820, 600)
         self.root.resizable(False, False)
@@ -902,12 +975,18 @@ class SettingsWindow:
         if logo is not None:
             self._logo_ref = logo
             ttk.Label(header, image=logo).pack(side="right")
-        ttk.Label(header, text="Settings", font=("Segoe UI", 17, "bold")).pack(
+        ttk.Label(header, text=tr("Settings"), font=("Segoe UI", 17, "bold")).pack(
             side="left", anchor="w"
         )
+        ttk.Button(
+            header,
+            text=("TR" if i18n.get_lang() == "en" else "EN"),
+            width=4,
+            command=self._toggle_language,
+        ).pack(side="right", padx=(0, 8))
 
         # --- key list
-        keys = ttk.LabelFrame(self.content, text="Remote keys", padding=10)
+        keys = ttk.LabelFrame(self.content, text=tr("Remote keys"), padding=10)
         keys.pack(fill="both", expand=True, pady=(12, 8))
 
         table = ttk.Frame(keys)
@@ -915,8 +994,8 @@ class SettingsWindow:
         self.tree = ttk.Treeview(
             table, columns=("key", "action"), show="headings", height=6
         )
-        self.tree.heading("key", text="Key")
-        self.tree.heading("action", text="Eylem")
+        self.tree.heading("key", text=tr("Key"))
+        self.tree.heading("action", text=tr("Action"))
         self.tree.column("key", width=330, anchor="w")
         self.tree.column("action", width=180, anchor="w")
         self.tree.pack(side="left", fill="both", expand=True)
@@ -927,8 +1006,8 @@ class SettingsWindow:
 
         buttons = ttk.Frame(keys)
         buttons.pack(fill="x", pady=(8, 0))
-        ttk.Button(buttons, text="Add key", command=self._add_key).pack(side="left")
-        ttk.Button(buttons, text="Remove selected", command=self._remove_selected).pack(
+        ttk.Button(buttons, text=tr("Add key"), command=self._add_key).pack(side="left")
+        ttk.Button(buttons, text=tr("Remove selected"), command=self._remove_selected).pack(
             side="left", padx=(8, 0)
         )
         self.hint_var = tk.StringVar(value="")
@@ -938,36 +1017,36 @@ class SettingsWindow:
         self.key_hint.pack(side="left", padx=(12, 0))
 
         # --- action for the selected key
-        action = ttk.LabelFrame(self.content, text="Action for the selected key", padding=10)
+        action = ttk.LabelFrame(self.content, text=tr("Action for the selected key"), padding=10)
         action.pack(fill="x", pady=(0, 8))
         ttk.Radiobutton(
             action, value="winh", variable=self.action_mode,
-            text="Windows voice typing (Win+H) — recommended",
+            text=tr("Windows voice typing (Win+H) — recommended"),
         ).pack(anchor="w")
         custom = ttk.Frame(action)
         custom.pack(fill="x", pady=(4, 0))
         ttk.Radiobutton(
-            custom, value="custom", variable=self.action_mode, text="Custom hotkey:"
+            custom, value="custom", variable=self.action_mode, text=tr("Custom hotkey:")
         ).pack(side="left")
         self.hotkey_entry = ttk.Entry(custom, textvariable=self.custom_hotkey, width=20)
         self.hotkey_entry.pack(side="left", padx=(8, 0))
-        ttk.Button(custom, text="Capture", command=self._capture_hotkey).pack(
+        ttk.Button(custom, text=tr("Capture"), command=self._capture_hotkey).pack(
             side="left", padx=(6, 0)
         )
 
         # --- options
-        options = ttk.LabelFrame(self.content, text="Options", padding=10)
+        options = ttk.LabelFrame(self.content, text=tr("Options"), padding=10)
         options.pack(fill="x", pady=(0, 6))
         row = ttk.Frame(options)
         row.pack(fill="x")
         ttk.Checkbutton(
-            row, text="Start with Windows", variable=self.autostart
+            row, text=tr("Start with Windows"), variable=self.autostart
         ).pack(side="left")
         ttk.Checkbutton(
             row, text="Bip sesi", variable=self.beep
         ).pack(side="left", padx=(16, 0))
         ttk.Checkbutton(
-            row, text="Desktop shortcut", variable=self.create_shortcut
+            row, text=tr("Desktop shortcut"), variable=self.create_shortcut
         ).pack(side="left", padx=(16, 0))
 
         ttk.Label(self.content, textvariable=self.status, foreground="#8a4b00").pack(
@@ -978,11 +1057,11 @@ class SettingsWindow:
         footer = ttk.Frame(self.root, padding=(14, 10))
         footer.pack(fill="x", side="bottom")
         ttk.Button(
-            footer, text="Remove Kelam from this computer", command=self._remove
+            footer, text=tr("Remove Kelam from this computer"), command=self._remove
         ).pack(side="left")
-        self.save_button = ttk.Button(footer, text="Save", command=self._save)
+        self.save_button = ttk.Button(footer, text=tr("Save"), command=self._save)
         self.save_button.pack(side="right")
-        ttk.Button(footer, text="Cancel", command=self._cancel).pack(
+        ttk.Button(footer, text=tr("Cancel"), command=self._cancel).pack(
             side="right", padx=(0, 8)
         )
 
@@ -1027,7 +1106,7 @@ class SettingsWindow:
         if self.bindings:
             self.hint_var.set("")
         else:
-            self.hint_var.set("No keys yet — start with 'Add key'.")
+            self.hint_var.set(tr("No keys yet — start with 'Add key'."))
 
     def _on_select(self, _event=None):
         selection = self.tree.selection()
@@ -1080,7 +1159,7 @@ class SettingsWindow:
             return
         self.listening = True
         self.capture.start()
-        self.hint_var.set("Press the new remote button now…")
+        self.hint_var.set(tr("Press the new remote button now…"))
         self.root.after(150, self._poll_capture)
 
     def _poll_capture(self):
@@ -1098,7 +1177,7 @@ class SettingsWindow:
             )
             self.bindings.append(cfg.binding(candidate, hotkey_value))
             self._refresh_table(select=len(self.bindings) - 1)
-            self.hint_var.set("Key added — do not forget to save.")
+            self.hint_var.set(tr("Key added — do not forget to save."))
             return
         self.root.after(150, self._poll_capture)
 
@@ -1108,11 +1187,11 @@ class SettingsWindow:
         del self.bindings[self.selected]
         self.selected = 0 if self.bindings else None
         self._refresh_table(select=0 if self.bindings else None)
-        self.hint_var.set("Key removed — do not forget to save.")
+        self.hint_var.set(tr("Key removed — do not forget to save."))
 
     # --------------------------------------------------------- hotkey
     def _capture_hotkey(self):
-        self.custom_hotkey.set("… waiting for a key …")
+        self.custom_hotkey.set(tr("… waiting for a key …"))
         self.action_mode.set("custom")
 
         def handler(event):
@@ -1135,7 +1214,7 @@ class SettingsWindow:
         except ValueError:
             self.custom_hotkey.set("ctrl+alt+d")
             messagebox.showwarning(
-                "Invalid hotkey",
+                tr("Invalid hotkey"),
                 f"'{combo}' cannot be used, reverted to the default.",
                 parent=self.root,
             )
@@ -1145,18 +1224,18 @@ class SettingsWindow:
         self._commit_action()
         if not self.bindings:
             messagebox.showwarning(
-                "No key", "Add at least one remote key.", parent=self.root
+                tr("No key"), tr("Add at least one remote key."), parent=self.root
             )
             return
         for binding in self.bindings:
             try:
                 hotkey.parse_hotkey((binding.get("action") or {}).get("hotkey", "win+h"))
             except ValueError as exc:
-                messagebox.showerror("Hotkey", str(exc), parent=self.root)
+                messagebox.showerror(tr("Hotkey"), str(exc), parent=self.root)
                 return
 
         self.save_button.configure(state="disabled")
-        self.status.set("Saving…")
+        self.status.set(tr("Saving…"))
 
         def work():
             try:
@@ -1185,13 +1264,13 @@ class SettingsWindow:
         threading.Thread(target=work, daemon=True).start()
 
     def _after_save(self):
-        self.status.set("Saved.")
+        self.status.set(tr("Saved."))
         self.root.destroy()
 
     def _save_failed(self, error):
         self.save_button.configure(state="normal")
         self.status.set("")
-        messagebox.showerror("Could not save", str(error), parent=self.root)
+        messagebox.showerror(tr("Could not save"), str(error), parent=self.root)
 
     # --------------------------------------------------------------- remove
     def _remove(self):
@@ -1213,8 +1292,24 @@ class SettingsWindow:
             service.start()
         self.root.destroy()
 
+    def _toggle_language(self):
+        """Switch the UI language and reopen the window in it."""
+        i18n.toggle_lang()
+        self.settings["language"] = i18n.get_lang()
+        try:
+            cfg.save(self.settings)
+        except OSError:
+            pass
+        self.reopen = True
+        self.root.destroy()
+
     def run(self):
         self.root.mainloop()
+        while self.reopen:
+            self.reopen = False
+            fresh = SettingsWindow()
+            fresh.root.mainloop()
+            self.reopen = fresh.reopen
 
 
 class UninstallWizard:
@@ -1226,7 +1321,7 @@ class UninstallWizard:
     def __init__(self, parent: tk.Misc):
         self.parent = parent
         self.win = tk.Toplevel(parent)
-        self.win.title("Remove Kelam")
+        self.win.title(tr("Remove Kelam"))
         self.win.geometry("560x420")
         self.win.resizable(False, False)
         self.win.transient(parent)
@@ -1258,42 +1353,42 @@ class UninstallWizard:
     def _show_confirm(self):
         self._clear()
         ttk.Label(
-            self.body, text="Remove Kelam?",
+            self.body, text=tr("Remove Kelam?"),
             font=("Segoe UI", 15, "bold"),
         ).pack(anchor="w")
         ttk.Label(
             self.body,
-            text="When removal finishes, the app stops working.",
+            text=tr("When removal finishes, the app stops working."),
             wraplength=480,
         ).pack(anchor="w", pady=(6, 10))
 
-        box = ttk.LabelFrame(self.body, text="Will be removed", padding=12)
+        box = ttk.LabelFrame(self.body, text=tr("Will be removed"), padding=12)
         box.pack(fill="both", expand=True)
         items = [
-            "Running bridge (background process)",
-            "Startup entry — no longer starts with Windows",
-            "Desktop and Start Menu shortcuts",
-            "Apps & features entry",
-            "Settings, logs and temporary files",
+            tr("Running bridge (background process)"),
+            tr("Startup entry — no longer starts with Windows"),
+            tr("Desktop and Start Menu shortcuts"),
+            tr("Apps & features entry"),
+            tr("Settings, logs and temporary files"),
         ]
         if service.is_frozen():
-            items.append("Program folder (only if it holds Kelam files)")
+            items.append(tr("Program folder (only if it holds Kelam files)"))
         ttk.Label(
             box, text="\n".join(f"• {i}" for i in items), justify="left",
         ).pack(anchor="nw")
 
-        ttk.Button(self.footer, text="Cancel", command=self._cancel).pack(side="right")
-        ttk.Button(self.footer, text="Remove", command=self._start).pack(
+        ttk.Button(self.footer, text=tr("Cancel"), command=self._cancel).pack(side="right")
+        ttk.Button(self.footer, text=tr("Remove"), command=self._start).pack(
             side="right", padx=(0, 8)
         )
 
     def _show_progress(self):
         self._clear()
         ttk.Label(
-            self.body, text="Removing",
+            self.body, text=tr("Removing"),
             font=("Segoe UI", 15, "bold"),
         ).pack(anchor="w")
-        self.status = tk.StringVar(value="Preparing…")
+        self.status = tk.StringVar(value=tr("Preparing…"))
         ttk.Label(self.body, textvariable=self.status).pack(anchor="w", pady=(10, 8))
         self.progress = ttk.Progressbar(self.body, mode="determinate", maximum=100)
         self.progress.pack(fill="x")
@@ -1301,15 +1396,15 @@ class UninstallWizard:
     def _show_done(self):
         self._clear()
         ttk.Label(
-            self.body, text="Kelam removed",
+            self.body, text=tr("Kelam removed"),
             font=("Segoe UI", 15, "bold"),
         ).pack(anchor="w")
         ttk.Label(
             self.body,
-            text="The following were removed:",
+            text=tr("The following were removed:"),
             wraplength=480,
         ).pack(anchor="w", pady=(8, 6))
-        box = ttk.LabelFrame(self.body, text="Removed", padding=12)
+        box = ttk.LabelFrame(self.body, text=tr("Removed"), padding=12)
         box.pack(fill="both", expand=True)
         ttk.Label(
             box, text="\n".join(f"• {r}" for r in self.removed) or "—",
@@ -1331,11 +1426,11 @@ class UninstallWizard:
 
     def _work(self):
         try:
-            self._set_progress(20, "Stopping the bridge…")
+            self._set_progress(20, tr("Stopping the bridge…"))
             self.removed = uninstall_all()
             if service.can_self_delete() and service.schedule_folder_delete():
-                self.removed.append("program folder (deleted on exit)")
-            self._set_progress(100, "Removal complete.")
+                self.removed.append(tr("program folder (deleted on exit)"))
+            self._set_progress(100, tr("Removal complete."))
         except Exception as error:  # noqa: BLE001
             self.removed = [f"HATA: {error}"]
         self.ui.post(self._show_done)
@@ -1358,13 +1453,13 @@ def uninstall_all():
     """Removes everything the installer left behind; returns the list."""
     removed = []
     if service.stop():
-        removed.append("running bridge stopped")
+        removed.append(tr("running bridge stopped"))
     service.set_autostart(False)
-    removed.append("startup entry (Run)")
+    removed.append(tr("startup entry (Run)"))
     service.unregister_uninstall()
-    removed.append("Apps & features entry")
+    removed.append(tr("Apps & features entry"))
     service.remove_shortcuts()
-    removed.append("shortcuts")
+    removed.append(tr("shortcuts"))
 
     for name in (
         "config.json",
