@@ -7,7 +7,11 @@ Press the button, speak, and the text appears wherever the cursor is — in any 
 [mic button]  →  HID / keyboard bridge  →  Win+H  →  voice typing  →  text
 ```
 
-![Kelam setup wizard](docs/screenshot-welcome.png)
+![Kelam](docs/promo-hero.png)
+
+![How it works](docs/promo-flow.png)
+
+![Features](docs/promo-features.png)
 
 ## Why a separate app
 
