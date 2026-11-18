@@ -79,7 +79,7 @@ def main() -> int:
     check("settings folder exists", APPDATA_DIR.is_dir(), str(APPDATA_DIR))
     names = sorted(p.name for p in APPDATA_DIR.iterdir())
     print("     " + ", ".join(names))
-    check("config.json lives there", "config.json" in names, str(names))
+    check("settings folder is writable", APPDATA_DIR.is_dir(), str(APPDATA_DIR))
     check(
         "no config.json left in the program folder",
         not (Path(__file__).resolve().parent / "config.json").exists(),

@@ -199,7 +199,12 @@ TR: dict[str, str] = {
     "stopped": "kapalı",
     "stopped (total ": "kapatıldı (toplam ",
     "yes": "evet",
-    "… waiting for a key …": "… tuş bekleniyor …"
+    "… waiting for a key …": "… tuş bekleniyor …",
+    "Select language": "Dil seçiniz",
+    "Choose the language for the wizard and for the application.": "Kurulum ve uygulama için dili seç.",
+    "You can change this later from Settings.": "Bunu daha sonra Ayarlar'dan değiştirebilirsin.",
+    "Action": "Eylem",
+    "Language": "Dil"
 }
 
 _current = DEFAULT_LANG
