@@ -461,22 +461,38 @@ class SetupWizard:
             tr("Select language"),
             tr("Choose the language for the wizard and for the application."),
         )
-        frame = ttk.Frame(self.content)
-        frame.pack(fill="x", pady=(6, 0))
+        # a bordered card, same composition as the AFK launcher's language step
+        card = tk.Frame(
+            self.content,
+            bd=0,
+            highlightthickness=1,
+            highlightbackground="#c9ced6",
+            highlightcolor="#c9ced6",
+        )
+        card.pack(fill="x", pady=(4, 0))
+        inner = tk.Frame(card)
+        inner.pack(fill="x", padx=2, pady=2)
         listbox = tk.Listbox(
-            frame,
+            inner,
             height=2,
             font=("Segoe UI", 12),
             activestyle="none",
             exportselection=False,
             cursor="hand2",
+            bd=0,
+            highlightthickness=0,
+            selectbackground="#0b62d6",
+            selectforeground="white",
+            background="white",
+            foreground="#1b1f24",
+            selectborderwidth=0,
         )
         for label in i18n.LANGUAGES.values():
             listbox.insert("end", f"   {label}")
         codes = list(i18n.LANGUAGES.keys())
         current = i18n.get_lang()
         listbox.selection_set(codes.index(current) if current in codes else 0)
-        listbox.pack(fill="x")
+        listbox.pack(fill="x", ipady=6)
         listbox.bind(
             "<<ListboxSelect>>",
             lambda _event=None: self._set_language(codes[listbox.curselection()[0]])
