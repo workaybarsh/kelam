@@ -575,7 +575,7 @@ class SetupWizard:
         )
 
     def _poll_capture(self):
-        if self.page != 2:
+        if self.current != "capture":
             return
         events = self.capture.snapshot()
         self.event_list.delete(0, "end")

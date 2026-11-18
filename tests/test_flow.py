@@ -14,6 +14,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config as cfg  # noqa: E402
+import paths  # noqa: E402
 import service  # noqa: E402
 import wizard as wizard_mod  # noqa: E402
 
@@ -76,18 +77,21 @@ def run_wizard():
             check("wizard opened (page 1)", app.page == 0)
 
             app.next_button.invoke()
-            check("moved to license page", app.page == 1)
+            check("moved to language page", app.page == 1 and app.current == "language", str(app.page))
+
+            app.next_button.invoke()
+            check("moved to license page", app.page == 2)
 
             app.next_button.invoke()  # kabul etmeden
             check(
                 "does not advance without accepting the license",
-                app.page == 1 and DIALOGS and DIALOGS[-1][0] == "warning",
+                app.page == 2 and DIALOGS and DIALOGS[-1][0] == "warning",
                 str(DIALOGS[-1][:2]) if DIALOGS else "no warning",
             )
 
             app.accepted_license.set(True)
             app.next_button.invoke()
-            check("advanced after accepting the license", app.page == 2)
+            check("advanced after accepting the license", app.page == 3)
 
             # Key capture: feed the same event the listener produces
             app.capture._on_hid(fake_hid_event())
@@ -108,15 +112,15 @@ def run_wizard():
             )
 
             app._on_return(None)  # Enter ile onay
-            check("confirmed with Enter", app.page == 3)
+            check("confirmed with Enter", app.page == 4)
 
             app.next_button.invoke()
-            check("action page passed", app.page == 4)
+            check("action page passed", app.page == 5)
             check("beep off by default", app.beep.get() is False)
             check("desktop shortcut on by default", app.create_shortcut.get() is True)
 
             app.next_button.invoke()
-            check("moved to summary page", app.page == 5)
+            check("moved to summary page", app.page == 6)
             check("button became 'Install'", app.next_button.cget("text") == "Install")
 
             app.next_button.invoke()
@@ -128,7 +132,7 @@ def run_wizard():
         poll()
 
     def poll():
-        if app.page == 7:
+        if app.page == 8:
             state["done"] = True
             app.root.quit()
             return
@@ -137,12 +141,15 @@ def run_wizard():
     app.root.after(250, driver)
     app.root.mainloop()
 
-    app.capture.stop()
-    if not app.root.winfo_exists():
+    try:
+        app.capture.stop()
+    except Exception:  # noqa: BLE001
         pass
     try:
-        app.root.destroy()
-    except Exception:
+        # after a successful install the wizard already destroyed its window
+        if app.root.winfo_exists():
+            app.root.destroy()
+    except Exception:  # noqa: BLE001
         pass
     return app, state
 
@@ -193,7 +200,7 @@ def test_install():
         check(
             "install location correct",
             os.path.normcase(entry.get("InstallLocation") or "")
-            == os.path.normcase(service.BASE_DIR),
+            == os.path.normcase(paths.APP_DIR),
         )
 
     check("bridge running", service.is_running(), f"pid={service.running_pid()}")
@@ -353,7 +360,7 @@ def test_uninstall():
     )
     check(
         "code files preserved",
-        os.path.isfile(os.path.join(service.BASE_DIR, "wizard.py")),
+        os.path.isfile(os.path.join(paths.APP_DIR, "wizard.py")),
     )
 
 
